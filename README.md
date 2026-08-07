@@ -1,14 +1,7 @@
 # Raspberry Pi 5 AI Cluster Automation with Ansible
 
-## Description:
-  * Ansible-based deployment for a Raspberry Pi 5 AI cluster.
-  * Includes llama.cpp RPC cluster with Docker and Hermes Agent.
-  * Provides inventory-driven role modules for system tuning.
-
-This repository provides an Ansible-based deployment for:
-
-- 1 Raspberry Pi 5 llama-server-head node and 2 Raspberry Pi 5 llama-rpc-worker nodes running a local llama.cpp RPC cluster with Docker.
-- Inventory-driven role modules for Wi-Fi, performance, and hardware tuning.
+## Description
+This repository provides Ansible-based automation for deploying a Raspberry Pi 5 AI cluster. It includes a `llama.cpp` RPC cluster with Docker and offers inventory-driven role modules for system tuning (Wi-Fi, performance, hardware).
 
 ## Prerequisites
 
@@ -19,6 +12,35 @@ This repository provides an Ansible-based deployment for:
 -   **ansible-lint**: Recommended for linting Ansible playbooks.
 -   **yamllint**: Recommended for linting YAML files.
 -   **pre-commit**: Recommended for managing pre-commit hooks for code quality.
+
+## Project Structure
+
+This repository follows the official Ansible sample setup pattern, using role-based organization.
+
+- site.yml
+- cluster_nodes.yml
+- inventories/dev/inventory.yml
+- roles/*
+
+## Role Breakdown
+
+- preflight: validates host count, IP mapping, architecture, and key safety assumptions.
+- common: baseline operating system and unattended security updates.
+- ntp: configures chrony so all Raspberry Pi hosts use the same NTP sources and remain synchronized.
+- motd: installs a J.A.R.V.I.S. banner and host configuration summary in /etc/motd.
+- docker_engine: official Docker apt repository setup and hardened daemon logging.
+- llama_cluster: deploys `llama-server-head` on the head node and `llama-rpc-worker` on each worker node.
+- wifi: explicit Wi-Fi enable or disable through inventory variable.
+- performance: CPU governor, sysctl, and file descriptor tuning.
+- hardware_tuning: PCIe, PCIe Gen 3, PoE fan probe, and active-cooling fan thresholds.
+
+## Security Controls Included
+
+- Preflight assertions for host mapping and architecture.
+- Docker daemon log limits to avoid uncontrolled log growth.
+- Container hardening in Compose: no-new-privileges, dropped Linux capabilities, read-only root filesystem, and tmpfs for ephemeral writes.
+- Loopback service binding by default for llama head API (`127.0.0.1`).
+- Optional strict container digest policy for llama and Open WebUI images.
 
 ## Usage
 
@@ -40,78 +62,33 @@ ansible-playbook -i inventories/dev/inventory.yml site.yml --syntax-check
 ansible -i inventories/dev/inventory.yml all -m ping
 ```
 
-## Project Structure
+### 4. Configure Variables
 
-This repository follows the official Ansible sample setup pattern, using role-based organization.
+Edit environment-specific variables in `inventories/dev/inventory.yml`.
 
-- site.yml
-- cluster_nodes.yml
-- inventories/dev/inventory.yml
-- roles/*
+-   **Variable Ownership**: Shared defaults are in `roles/llama_cluster/defaults/main.yml`. Override only deployment-specific values in `inventories/dev/inventory.yml` (e.g., cluster role, host endpoints, host-specific tuning). Avoid duplicating values unless intentional.
+-   **Important Variables**:
+    -   `ansible_user`
+    -   `llama_model_path`
+-   **Image Pinning**: If container images are pinned by digest, set `llama_enforce_image_digests: true`.
 
-## Role Breakdown
+### 5. Deploy the Cluster
 
-- preflight: validates host count, IP mapping, architecture, and key safety assumptions.
-- common: baseline operating system and unattended security updates.
-- ntp: configures chrony so all Raspberry Pi hosts use the same NTP sources and remain synchronized.
-- motd: installs a J.A.R.V.I.S. banner and host configuration summary in /etc/motd.
-- docker_engine: official Docker apt repository setup and hardened daemon logging.
-- llama_cluster: deploys llama-server-head on the head node and a single llama-rpc-worker on each worker node.
-- wifi: explicit Wi-Fi enable or disable through inventory variable.
-- performance: CPU governor, sysctl, and file descriptor tuning.
-- hardware_tuning: PCIe, PCIe Gen 3, PoE fan probe, and active-cooling fan thresholds.
-
-## Security Controls Included
-
-- Preflight assertions for host mapping and architecture.
-- Docker daemon log limits to avoid uncontrolled log growth.
-- Container hardening in Compose: no-new-privileges, dropped Linux capabilities, read-only root filesystem, and tmpfs for ephemeral writes.
-- Loopback service binding by default for llama head API (`127.0.0.1`).
-- Optional strict container digest policy for llama and Open WebUI images.
-
-## Configure Variables
-
-Edit environment values in inventories/dev/inventory.yml.
-
-Variable ownership convention:
-- Keep shared defaults in roles/llama_cluster/defaults/main.yml.
-- Override only deployment-specific values in inventories/dev/inventory.yml, such as the cluster role, host endpoints, and any host-specific tuning.
-- Avoid duplicating the same value in both places unless the inventory needs to intentionally override the default for a specific environment.
-
-Important variables to set before first deployment:
-
-- ansible_user
-- llama_model_path
-
-If your container images are pinned by digest, set:
-
-- llama_enforce_image_digests: true
-
-### 4. Deploy full stack
+To deploy the full stack:
 
 ```bash
 ansible-playbook -i inventories/dev/inventory.yml site.yml
 ```
 
-5. Deploy only cluster nodes:
+To deploy only cluster nodes (excluding other roles like `common`, `ntp`, etc.):
 
 ```bash
 ansible-playbook -i inventories/dev/inventory.yml cluster_nodes.yml
 ```
 
-6. Deploy only Hermes node:
-
-```bash
-ansible-playbook -i inventories/dev/inventory.yml hermes_node.yml
-```
-
 ## Open WebUI on the head node
 
-When the head-node deployment is complete, Open WebUI is available at http://127.0.0.1:3000/ by default. The service uses the official Open WebUI container image from https://docs.openwebui.com/ and connects to the local llama.cpp head API through the Compose network defined in the deployment.
-
-Official references:
-- https://docs.openwebui.com/
-- https://docs.docker.com/compose/compose-file/
+Once the head node deployment is complete, Open WebUI is accessible by default at [http://127.0.0.1:3000/](http://127.0.0.1:3000/). This service utilizes the official Open WebUI container image and connects to the local `llama.cpp` head API via the Compose network.
 
 ## Testing llama-rpc-worker and llama-server-head with curl
 
@@ -167,7 +144,7 @@ What this does:
 - Sends a minimal chat-completions request to the head server.
 - Verifies that the HTTP API is working and that the model stack is ready to generate output.
 - A successful response should contain a JSON payload with a completion message.
-
+ 
 If you are testing from another host, replace `127.0.0.1` with the head node IP.
 
 ### 4. Inspect logs if a test fails
@@ -190,9 +167,7 @@ These commands help you distinguish between:
 Run only selected modules with tags:
 
 ```bash
-ansible-playbook -i inventories/dev/inventory.yml site.yml --tags preflight
 ansible-playbook -i inventories/dev/inventory.yml site.yml --tags docker,llama
-ansible-playbook -i inventories/dev/inventory.yml site.yml --tags hermes
 ansible-playbook -i inventories/dev/inventory.yml site.yml --tags ntp,time
 ansible-playbook -i inventories/dev/inventory.yml site.yml --tags motd,branding
 ansible-playbook -i inventories/dev/inventory.yml site.yml --tags wifi
