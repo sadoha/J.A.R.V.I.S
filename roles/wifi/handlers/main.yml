@@ -1,0 +1,4 @@
+---
+- name: Reboot host
+  ansible.builtin.reboot:
+    msg: Rebooting to apply Wi-Fi and firmware configuration changes.

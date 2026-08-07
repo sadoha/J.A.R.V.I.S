@@ -1,0 +1,19 @@
+---
+- name: Build node profile text for MOTD
+  ansible.builtin.set_fact:
+    motd_node_profile: >-
+      {{
+        'Hermes Agent node (local service, non-containerized)'
+        if 'hermes_node' in group_names
+        else 'llama.cpp cluster node (Docker runtime for inference stack)'
+      }}
+  tags: [motd, branding, info]
+
+- name: Install J.A.R.V.I.S. MOTD
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: '0644'
+  tags: [motd, branding, info]

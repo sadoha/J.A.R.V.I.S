@@ -1,0 +1,10 @@
+---
+# File: roles/hardware_tuning/defaults/main.yml
+# Description:
+#   - Defines default variables for the hardware_tuning role.
+#   - Controls Raspberry Pi firmware settings related to PCIe.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+# Default values for the Raspberry Pi hardware tuning role.
+# These options toggle PCIe-related settings in /boot/firmware/config.txt.
+hardware_enable_pcie: true
+hardware_enable_pcie_gen3: true

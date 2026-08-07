@@ -1,0 +1,67 @@
+---
+# File: inventories/dev/inventory.yml
+# Description:
+#   - Defines the development environment inventory for Raspberry Pi 5 cluster.
+#   - Specifies host groups, IP addresses, and role-specific variable overrides.
+#   - Configures global variables for Ansible user, NTP, Docker, Hermes, performance, and hardware tuning.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+all:
+  vars:
+    ansible_user: admin # User for SSH connection. Consider using ansible-vault for sensitive credentials.
+    ansible_python_interpreter: /usr/bin/python3
+    preflight_expected_ips:
+      - 192.168.50.201
+      - 192.168.50.202
+      - 192.168.50.203
+
+    # Set to enabled or disabled depending on your deployment needs.
+    wifi_state: enabled
+
+    # NTP controls. Keep all hosts on the same authoritative sources.
+    ntp_enabled: true
+    ntp_servers:
+      - time.cloudflare.com
+      - time.google.com
+      - pool.ntp.org
+
+    # Docker hardening and runtime controls.
+    docker_manage_daemon_json: true
+    docker_log_driver: json-file
+    docker_log_max_size: "10m"
+    docker_log_max_file: "3"
+
+    # Performance tuning controls.
+    performance_cpu_governor: performance
+    performance_vfs_cache_pressure: 50
+    performance_no_file_soft: 65535
+    performance_no_file_hard: 65535
+
+    # Hardware tuning controls for Raspberry Pi firmware settings.
+    hardware_enable_pcie: true
+    hardware_enable_pcie_gen3: true
+
+  children:
+    llama_cluster_nodes:
+      vars:
+        wifi_state: disabled
+      children:
+        llama_server_head:
+          vars:
+            llama_cluster_role: head
+            open_webui_enabled: true
+            llama_worker_endpoints:
+              - 192.168.50.202:50052
+              - 192.168.50.203:50052
+          hosts:
+            rpi5-dev-node-1:
+              ansible_host: 192.168.50.201
+
+        llama_rpc_workers:
+          vars:
+            llama_cluster_role: worker
+          hosts:
+            rpi5-dev-node-2:
+              ansible_host: 192.168.50.202
+            rpi5-dev-node-3:
+              ansible_host: 192.168.50.203

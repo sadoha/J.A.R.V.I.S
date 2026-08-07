@@ -1,0 +1,50 @@
+---
+- name: Install performance tuning packages
+  ansible.builtin.apt:
+    name:
+      - linux-cpupower
+    state: present
+    update_cache: true
+  tags: [performance, tuning]
+
+- name: Configure CPU governor
+  ansible.builtin.copy:
+    dest: /etc/default/cpupower
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      GOVERNOR="{{ performance_cpu_governor }}"
+  notify: Restart cpupower
+  tags: [performance, tuning]
+
+- name: Ensure cpupower service is enabled
+  ansible.builtin.service:
+    name: cpupower
+    state: started
+    enabled: true
+  tags: [performance, tuning]
+
+- name: Apply kernel tuning sysctl profile
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-raspi-performance.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      vm.vfs_cache_pressure={{ performance_vfs_cache_pressure }}
+      net.core.somaxconn=4096
+      net.ipv4.tcp_tw_reuse=1
+  notify: Apply sysctl
+  tags: [performance, tuning]
+
+- name: Raise open file limits for all users
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-raspi-performance.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      * soft nofile {{ performance_no_file_soft }}
+      * hard nofile {{ performance_no_file_hard }}
+  tags: [performance, tuning]

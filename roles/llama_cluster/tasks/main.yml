@@ -1,0 +1,184 @@
+---
+- name: Validate image pinning policy when enabled
+  ansible.builtin.assert:
+    that:
+      - (not llama_enforce_image_digests) or ('@sha256:' in llama_head_image)
+      - (not llama_enforce_image_digests) or ('@sha256:' in llama_worker_image)
+      - (not llama_enforce_image_digests) or (not open_webui_enabled | bool) or ('@sha256:' in open_webui_image)
+    fail_msg: >-
+      When llama_enforce_image_digests is true, both llama_head_image and
+      llama_worker_image must be pinned by digest, and open_webui_image must
+      also be pinned when Open WebUI is enabled.
+  tags: [llama, cluster, security]
+
+- name: Validate llama cluster role
+  ansible.builtin.assert:
+    that:
+      - llama_cluster_role in ['head', 'worker']
+    fail_msg: llama_cluster_role must be either 'head' or 'worker'.
+  tags: [llama, cluster, security]
+
+- name: Validate head bind address for least exposure
+  ansible.builtin.assert:
+    that:
+      - llama_head_bind_address in ['127.0.0.1', '0.0.0.0']
+    fail_msg: llama_head_bind_address must be 127.0.0.1 or 0.0.0.0.
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, security]
+
+- name: Validate worker endpoints for head node
+  ansible.builtin.assert:
+    that:
+      - llama_worker_endpoints | length == (groups['llama_rpc_workers'] | default([]) | length)
+      - llama_worker_endpoints | select('match', '^[^:]+:[0-9]+$') | list | length == (llama_worker_endpoints | length)
+    fail_msg: >-
+      Head node must define one host:port endpoint per llama_rpc_workers host,
+      and each endpoint must use the format host:port.
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, security]
+
+- name: Validate worker port on worker nodes
+  ansible.builtin.assert:
+    that:
+      - llama_worker_port is defined
+    fail_msg: Worker nodes must define llama_worker_port.
+  when: llama_cluster_role == 'worker'
+  tags: [llama, cluster, security]
+
+- name: Ensure llama project directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ '0755' if item == llama_models_dir else '0750' }}"
+  loop:
+    - "{{ llama_compose_project_dir }}"
+    - "{{ llama_models_dir }}"
+  tags: [llama, cluster, deploy]
+
+- name: Check if model file exists
+  ansible.builtin.stat:
+    path: "{{ llama_model_path }}"
+  register: llama_model_file_stat
+  tags: [llama, cluster, deploy]
+
+- name: Ensure model file is world-readable
+  ansible.builtin.file:
+    path: "{{ llama_model_path }}"
+    mode: '0644'
+  when: llama_model_file_stat.stat.exists
+  tags: [llama, cluster, deploy]
+
+- name: Render Docker Compose file for llama services
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ llama_compose_project_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0640'
+  tags: [llama, cluster, deploy]
+
+- name: Ensure local llama.cpp build context exists
+  ansible.builtin.file:
+    path: "{{ llama_compose_project_dir }}/llama-cpp"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  tags: [llama, cluster, deploy]
+
+- name: Copy local llama.cpp Dockerfile
+  ansible.builtin.copy:
+    src: llama_cpp/Dockerfile
+    dest: "{{ llama_compose_project_dir }}/llama-cpp/Dockerfile"
+    owner: root
+    group: root
+    mode: '0644'
+  tags: [llama, cluster, deploy]
+
+- name: Run model downloader for local llama model # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+  ansible.builtin.command:
+    cmd: docker compose run --rm model-downloader
+    chdir: "{{ llama_compose_project_dir }}"
+    creates: "{{ llama_model_path }}"
+  when:
+    - llama_cluster_role == 'head'
+    - llama_model_downloader_enabled | bool
+  tags: [llama, cluster, deploy]
+
+- name: Build llama rpc worker image locally # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_image_module.html
+  community.docker.docker_image:
+    name: "{{ llama_worker_image }}"
+    source: build
+    build:
+      path: "{{ llama_compose_project_dir }}/llama-cpp"
+      pull: false
+    state: present
+  when: llama_cluster_role == 'worker'
+  tags: [llama, cluster, deploy]
+
+- name: Start or update llama rpc workers # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html
+  community.docker.docker_compose_v2:
+    project_src: "{{ llama_compose_project_dir }}"
+    services: [llama-rpc-worker]
+    pull: never
+    remove_orphans: true
+  when: llama_cluster_role == 'worker'
+  tags: [llama, cluster, deploy]
+
+- name: Wait for worker nodes to be ready before starting head
+  ansible.builtin.wait_for:
+    host: "{{ item.split(':')[0] }}"
+    port: "{{ item.split(':')[1] }}"
+    state: started
+    timeout: 60
+    delay: 5
+  loop: "{{ llama_worker_endpoints }}"
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, deploy]
+
+- name: Build llama head server image locally # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_image_module.html
+  community.docker.docker_image:
+    name: "{{ llama_head_image }}"
+    source: build
+    build:
+      path: "{{ llama_compose_project_dir }}/llama-cpp"
+      pull: false
+    state: present
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, deploy]
+
+- name: Start or update llama head server # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html
+  community.docker.docker_compose_v2:
+    project_src: "{{ llama_compose_project_dir }}"
+    services: [llama-server-head]
+    pull: never
+    remove_orphans: true
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, deploy]
+
+- name: Start or update Open WebUI # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html
+  community.docker.docker_compose_v2:
+    project_src: "{{ llama_compose_project_dir }}"
+    services: [open-webui]
+    pull: always
+    remove_orphans: true
+  when:
+    - llama_cluster_role == 'head'
+    - open_webui_enabled | bool
+  tags: [llama, cluster, deploy]
+
+- name: Validate llama head health endpoint # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html
+  ansible.builtin.uri:
+    url: "http://{{ llama_head_health_host }}:{{ llama_head_bind_port }}/health"
+    method: GET
+    status_code: 200
+  register: llama_head_health
+  retries: 20
+  delay: 3
+  until: llama_head_health.status == 200
+  vars:
+    llama_head_health_host: "{{ '127.0.0.1' if llama_head_bind_address == '0.0.0.0' else llama_head_bind_address }}"
+  when: llama_cluster_role == 'head'
+  tags: [llama, cluster, verify]

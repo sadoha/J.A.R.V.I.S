@@ -1,0 +1,124 @@
+---
+# File: roles/docker_engine/tasks/main.yml
+# Description:
+#   - Installs and configures Docker Engine and Compose plugin.
+#   - Removes conflicting packages and sets up Docker's official APT repository.
+#   - Configures Docker daemon logging limits and adds the Ansible user to the docker group.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Remove unofficial or conflicting container packages
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - docker-doc
+      - docker-buildx
+      - podman-docker
+      - containerd
+      - runc
+    state: absent
+    purge: true
+  become: true # Requires elevated privileges to manage packages
+  tags: [docker, runtime, security]
+
+- name: Ensure Docker keyring directory exists
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true # Requires elevated privileges to create directories under /etc
+  tags: [docker, runtime, security]
+
+- name: Add Docker official GPG key
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/get_url_module.html
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: '0644'
+  become: true # Requires elevated privileges to write to /etc
+  tags: [docker, runtime, security]
+
+- name: Add Docker official apt repository
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ ansible_architecture | replace('aarch64', 'arm64') }}
+      signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable
+    filename: docker
+    state: present
+    update_cache: true
+  become: true # Requires elevated privileges to manage APT repositories
+  tags: [docker, runtime, security]
+
+- name: Install Docker Engine and Compose plugin
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  become: true # Requires elevated privileges to install packages
+  tags: [docker, runtime, security]
+
+- name: Ensure Docker service is enabled and running # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
+  ansible.builtin.systemd_service:
+    name: docker
+    enabled: true
+    state: started
+  become: true # Requires elevated privileges to manage systemd services
+  tags: [docker, runtime, security]
+
+- name: Ensure docker group exists
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/group_module.html
+  ansible.builtin.group:
+    name: docker
+    state: present
+  become: true # Requires elevated privileges to manage groups
+  tags: [docker, runtime]
+
+- name: Configure Docker daemon logging limits
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      {
+        "log-driver": "{{ docker_log_driver }}",
+        "log-opts": {
+          "max-size": "{{ docker_log_max_size }}",
+          "max-file": "{{ docker_log_max_file }}"
+        }
+      }
+  become: true # Requires elevated privileges to write to /etc
+  when: docker_manage_daemon_json | bool
+  notify: Restart docker
+  tags: [docker, runtime, security]
+
+- name: Add Ansible SSH user to docker group
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: true
+  register: docker_group_membership
+  become: true # Requires elevated privileges to modify user groups
+  tags: [docker, runtime]
+
+- name: Reset SSH connection after docker group change
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/meta_module.html
+  ansible.builtin.meta: reset_connection
+  when: docker_group_membership.changed
+  tags: [docker, runtime]

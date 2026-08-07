@@ -1,0 +1,6 @@
+---
+ntp_enabled: true
+ntp_servers:
+  - time.cloudflare.com
+  - time.google.com
+  - pool.ntp.org

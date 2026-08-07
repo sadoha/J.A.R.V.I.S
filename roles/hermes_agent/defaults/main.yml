@@ -1,0 +1,13 @@
+---
+hermes_release_url: ""
+hermes_release_checksum: ""
+hermes_release_version: "v0.0.0"
+hermes_release_archive_dir: /var/tmp/hermes-agent
+
+hermes_service_user: hermes
+hermes_service_group: hermes
+hermes_install_dir: /opt/hermes-agent
+hermes_data_dir: /var/lib/hermes-agent
+hermes_log_dir: /var/log/hermes-agent
+hermes_head_base_url: http://127.0.0.1:8080/v1
+hermes_exec_start: /opt/hermes-agent/current/hermes-agent gateway run

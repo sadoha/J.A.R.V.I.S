@@ -1,0 +1,13 @@
+---
+# File: roles/hardware_tuning/handlers/main.yml
+# Description:
+#   - Defines handlers for the hardware_tuning role.
+#   - Includes a handler to reboot the Raspberry Pi after firmware configuration changes.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+# Reboot the Raspberry Pi after the firmware configuration file changes so the
+# updated boot settings are applied on the next start.
+- name: Reboot after firmware config change
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/reboot_module.html
+  ansible.builtin.reboot:
+    msg: Rebooting to apply updated firmware configuration changes.

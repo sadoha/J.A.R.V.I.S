@@ -1,0 +1,63 @@
+---
+# File: roles/preflight/tasks/main.yml
+# Description:
+#   - Validates inventory structure, host counts, and IP mappings.
+#   - Asserts Wi-Fi state input and target host architecture.
+#   - Ensures key safety assumptions are met before deployment.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Validate expected inventory group sizes
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+  ansible.builtin.assert:
+    that:
+      - "groups['llama_cluster_nodes'] | default([]) | length > 0"
+      - "groups['llama_server_head'] | default([]) | length == 1"
+      - "groups['llama_rpc_workers'] | default([]) | length > 0"
+    fail_msg: >-
+      Inventory must define at least one llama_cluster_nodes host, exactly one
+      llama_server_head host, and at least one llama_rpc_workers host.
+  run_once: true
+  delegate_to: localhost
+  become: false # Assertions do not require elevated privileges
+  tags: [preflight, security]
+
+- name: Validate host IP uniqueness and expected address range
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+  ansible.builtin.assert:
+    that:
+      - all_ips | length == (all_ips | unique | length)
+      - preflight_expected_ips | length == all_ips | length
+      - all_ips | difference(preflight_expected_ips) | length == 0
+    fail_msg: >-
+      Inventory host IPs must be unique and must match preflight_expected_ips
+      exactly.
+  vars:
+    all_ips: >-
+      {{
+        groups['llama_cluster_nodes']
+        | map('extract', hostvars, 'ansible_host')
+        | list
+      }}
+  run_once: true
+  delegate_to: localhost
+  become: false # Assertions do not require elevated privileges
+  tags: [preflight, security]
+
+- name: Validate Wi-Fi state input
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+  ansible.builtin.assert:
+    that:
+      - wifi_state in ['enabled', 'disabled']
+    fail_msg: wifi_state must be either enabled or disabled.
+  become: false # Assertions do not require elevated privileges
+  tags: [preflight, security]
+
+- name: Ensure deployment targets are Linux on ARM64
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+  ansible.builtin.assert:
+    that:
+      - ansible_system == 'Linux'
+      - ansible_architecture in ['aarch64', 'arm64']
+    fail_msg: This playbook is intended for Raspberry Pi 5 running a 64-bit Linux OS.
+  become: false # Assertions do not require elevated privileges
+  tags: [preflight, security]

@@ -1,0 +1,34 @@
+---
+- name: Ensure rfkill is installed
+  ansible.builtin.apt:
+    name: rfkill
+    state: present
+    update_cache: true
+  tags: [wifi, network]
+
+- name: Disable Wi-Fi persistently in config.txt
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    regexp: '^dtoverlay=disable-wifi$'
+    line: dtoverlay=disable-wifi
+    state: present
+  when: wifi_state == 'disabled'
+  notify: Reboot host
+  tags: [wifi, network]
+
+- name: Enable Wi-Fi persistently in config.txt
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    regexp: '^dtoverlay=disable-wifi$'
+    state: absent
+  when: wifi_state == 'enabled'
+  notify: Reboot host
+  tags: [wifi, network]
+
+- name: Apply immediate Wi-Fi radio state
+  ansible.builtin.command:
+    cmd: "rfkill {{ 'block' if wifi_state == 'disabled' else 'unblock' }} wifi"
+  register: wifi_rfkill
+  changed_when: false
+  failed_when: false
+  tags: [wifi, network]

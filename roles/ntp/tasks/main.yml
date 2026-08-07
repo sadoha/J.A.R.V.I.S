@@ -1,0 +1,83 @@
+---
+# File: roles/ntp/tasks/main.yml
+# Description:
+#   - Configures Network Time Protocol (NTP) using chrony.
+#   - Validates NTP configuration inputs and installs chrony.
+#   - Disables systemd-timesyncd to avoid conflicts.
+#   - Ensures chrony service is enabled, running, and synchronized.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Validate NTP configuration inputs
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+  ansible.builtin.assert:
+    that:
+      - ntp_enabled | type_debug == 'bool'
+      - ntp_servers is iterable
+      - ntp_servers | length > 0
+    fail_msg: ntp_enabled must be boolean and ntp_servers must contain at least one server.
+  become: false # Assertions do not require elevated privileges
+  tags: [ntp, time, security]
+
+- name: Install chrony
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+  ansible.builtin.apt:
+    name: chrony
+    state: present
+    update_cache: true
+  become: true # Requires elevated privileges to install packages
+  when: ntp_enabled
+  tags: [ntp, time, security]
+
+- name: Check whether systemd-timesyncd service exists
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/stat_module.html
+  ansible.builtin.stat:
+    path: /lib/systemd/system/systemd-timesyncd.service
+  register: ntp_timesyncd_service
+  become: false # Checking file existence does not require elevated privileges
+  when: ntp_enabled
+  tags: [ntp, time]
+
+- name: Disable systemd-timesyncd when chrony is enabled
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    state: stopped
+    enabled: false
+  become: true # Requires elevated privileges to manage systemd services
+  when:
+    - ntp_enabled
+    - ntp_timesyncd_service.stat.exists
+  tags: [ntp, time]
+
+- name: Configure chrony servers and sync behavior
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: true # Requires elevated privileges to write to /etc
+  when: ntp_enabled
+  notify: Restart chrony
+  tags: [ntp, time, security]
+
+- name: Ensure chrony service is enabled and running
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: true
+  become: true # Requires elevated privileges to manage systemd services
+  when: ntp_enabled
+  tags: [ntp, time]
+
+- name: Verify time synchronization tracking status
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+  ansible.builtin.command:
+    cmd: chronyc tracking
+  register: ntp_chronyc_tracking
+  changed_when: false
+  become: false # This command does not require elevated privileges
+  when: ntp_enabled
+  tags: [ntp, time, verify]

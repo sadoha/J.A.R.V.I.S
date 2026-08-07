@@ -1,0 +1,47 @@
+---
+# File: roles/llama_cluster/defaults/main.yml
+# Description:
+#   - Defines default variables for the llama_cluster role.
+#   - Includes configurations for Docker Compose project, model paths, image names, and service settings.
+#   - Sets defaults for Open WebUI integration.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+# Enable verbose logging for llama.cpp services.
+llama_enforce_image_digests: false
+llama_compose_project_dir: /opt/llama-cluster
+llama_models_dir: /opt/llama-cluster/models
+llama_model_path: /opt/llama-cluster/models/gemma-3-1b-it-Q4_K_M.gguf
+llama_model_downloader_enabled: true
+llama_model_downloader_image: alpine:3.20
+llama_model_download_url: "https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q4_K_M.gguf"
+
+llama_head_image: llama-cluster-head:local
+llama_worker_image: llama-cluster-worker:local
+llama_cpp_ref: ddd4ec1428a6201e18975ea52b07c71e0f9aef26
+
+llama_head_bind_address: 0.0.0.0
+llama_head_bind_port: 8080
+llama_head_container_port: 8080
+llama_ctx_size: 65536
+# The RPi 5 has 4 cores, so a higher thread count is recommended for performance.
+llama_threads: 4
+llama_cluster_role: head
+llama_mlock: false
+llama_head_entrypoint:
+  - llama-server
+
+llama_worker_bind_address: 0.0.0.0
+llama_worker_port: 50052
+llama_worker_container_port: 50052
+llama_worker_endpoints: []
+llama_worker_entrypoint:
+  - ggml-rpc-server
+
+# Open WebUI defaults for the head node.
+# Official docs: https://docs.openwebui.com/
+open_webui_enabled: true
+open_webui_image: ghcr.io/open-webui/open-webui:main
+open_webui_bind_address: 0.0.0.0
+open_webui_bind_port: 3000
+open_webui_container_port: 8080
+open_webui_api_key: not-needed
+open_webui_auth: true

@@ -1,0 +1,65 @@
+---
+- name: Install baseline OS packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - wget
+      - gnupg
+      - lsb-release
+      - python3
+      - python3-venv
+      - python3-pip
+      - jq
+      - rsync
+      - unattended-upgrades
+      - needrestart
+      - vim
+      - git
+      - htop
+      - net-tools
+      - dnsutils
+    state: present
+    update_cache: true
+  tags: [common, os, security]
+
+- name: Enable unattended security upgrades
+  ansible.builtin.service:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+  tags: [common, os, security]
+
+- name: Ensure locale packages are installed
+  ansible.builtin.apt:
+    name:
+      - locales
+    state: present
+    update_cache: true
+  tags: [common, os]
+
+- name: Ensure en_US.UTF-8 locale is enabled
+  ansible.builtin.lineinfile:
+    path: /etc/locale.gen
+    regexp: '^#?\s*en_US\.UTF-8\s+UTF-8$'
+    line: en_US.UTF-8 UTF-8
+  register: locale_gen_entry
+  tags: [common, os]
+
+- name: Generate en_US.UTF-8 locale
+  ansible.builtin.command:
+    cmd: locale-gen en_US.UTF-8
+  when: locale_gen_entry.changed
+  tags: [common, os]
+
+- name: Configure system default locale
+  ansible.builtin.copy:
+    dest: /etc/default/locale
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      LANG=en_US.UTF-8
+      LC_ALL=en_US.UTF-8
+  tags: [common, os]

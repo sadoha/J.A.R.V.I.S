@@ -1,0 +1,16 @@
+---
+# Update Raspberry Pi firmware configuration for PCIe tuning.
+# See: https://www.raspberrypi.com/documentation/computers/config_txt.html
+- name: Configure PCIe settings in /boot/firmware/config.txt # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    regexp: "^{{ item.line }}$"
+    line: "{{ item.line }}"
+    state: "{{ item.state }}"
+  notify: Reboot after firmware config change
+  tags: [hardware, tuning]
+  loop:
+    - line: dtparam=pciex1
+      state: "{{ 'present' if hardware_enable_pcie else 'absent' }}"
+    - line: dtparam=pciex1_gen=3
+      state: "{{ 'present' if hardware_enable_pcie_gen3 else 'absent' }}"

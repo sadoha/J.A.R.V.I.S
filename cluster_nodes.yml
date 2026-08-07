@@ -1,0 +1,28 @@
+---
+- name: Configure llama.cpp RPC worker nodes
+  hosts: llama_rpc_workers
+  gather_facts: true
+  roles: &llama_cluster_base_roles
+    - role: preflight
+      tags: [always, preflight, security]
+    - role: common
+      tags: [common, os, security]
+    - role: motd
+      tags: [motd, branding, info]
+    - role: ntp
+      tags: [ntp, time, security]
+    - role: docker_engine
+      tags: [docker, runtime, security]
+    - role: llama_cluster
+      tags: [llama, cluster, deploy]
+    - role: wifi
+      tags: [wifi, network]
+    - role: performance
+      tags: [performance, tuning]
+    - role: hardware_tuning
+      tags: [hardware, tuning]
+
+- name: Configure llama.cpp head node
+  hosts: llama_server_head
+  gather_facts: true
+  roles: *llama_cluster_base_roles

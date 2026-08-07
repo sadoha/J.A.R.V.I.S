@@ -1,0 +1,14 @@
+# Managed by Ansible.
+# Official chrony documentation: https://chrony-project.org/documentation.html
+
+{% for ntp_server in ntp_servers %}
+server {{ ntp_server }} iburst
+{% endfor %}
+
+driftfile /var/lib/chrony/chrony.drift
+makestep 1.0 3
+rtcsync
+
+keyfile /etc/chrony/chrony.keys
+leapsectz right/UTC
+logdir /var/log/chrony

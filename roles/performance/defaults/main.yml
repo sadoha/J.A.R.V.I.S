@@ -1,0 +1,5 @@
+---
+performance_cpu_governor: performance
+performance_vfs_cache_pressure: 50
+performance_no_file_soft: 65535
+performance_no_file_hard: 65535

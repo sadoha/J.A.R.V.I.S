@@ -1,0 +1,20 @@
+
+   $$$$$\      $$$$$$\      $$$$$$$\  $$\    $$\  $$$$$$\     $$$$$$\      
+   \__$$ |    $$  __$$\     $$  __$$\ $$ |   $$ | \_$$  _|   $$  __$$\     
+      $$ |    $$ /  $$ |    $$ |  $$ |$$ |   $$ |   $$ |     $$ /  \__|    
+      $$ |    $$$$$$$$ |    $$$$$$$  |\$$\  $$  |   $$ |     \$$$$$$\      
+$$\   $$ |    $$  __$$ |    $$  __$$<  \$$\$$  /    $$ |      \____$$\     
+$$ |  $$ |    $$ |  $$ |    $$ |  $$ |  \$$$  /     $$ |     $$\   $$ |    
+\$$$$$$  |$$\ $$ |  $$ |$$\ $$ |  $$ |$$\\$  /$$\ $$$$$$\ $$\\$$$$$$  |$$\ 
+ \______/ \__|\__|  \__|\__|\__|  \__|\__|\_/ \__|\______|\__|\______/ \__|
+
+J.A.R.V.I.S. (Just A Rather Very Intelligent System)
+====================================================
+
+Host: {{ inventory_hostname }}
+Address: {{ ansible_host | default('n/a') }}
+Role: {{ motd_node_profile }}
+Wi-Fi policy: {{ wifi_state | default('enabled') }}
+NTP sync: {{ 'enabled' if (ntp_enabled | default(true) | bool) else 'disabled' }}
+
+Managed by Ansible playbooks in this repository.

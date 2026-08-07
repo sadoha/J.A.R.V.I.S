@@ -1,0 +1,121 @@
+{% if llama_cluster_role == 'head' %}
+services:
+  model-downloader:
+    image: "{{ llama_model_downloader_image }}"
+    restart: "no"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        mkdir -p "{{ llama_model_path | dirname }}"
+        if [ -f "{{ llama_model_path }}" ]; then
+          echo "Model file already exists. Skipping download."
+          exit 0
+        fi
+        if [ -z "{{ llama_model_download_url | default('') }}" ]; then
+          echo "llama_model_download_url is empty and model file is missing: {{ llama_model_path }}"
+          exit 1
+        fi
+        wget -O "{{ llama_model_path }}" "{{ llama_model_download_url }}"
+        chmod 0644 "{{ llama_model_path }}"
+    volumes:
+      - model-data:{{ llama_models_dir }}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  llama-server-head:
+    platform: linux/arm64
+    build:
+      context: "{{ llama_compose_project_dir }}/llama-cpp"
+      dockerfile: Dockerfile
+      args:
+        LLAMA_CPP_REF: "{{ llama_cpp_ref }}"
+        LLAMA_RUNTIME_PACKAGES: libgomp1 curl
+        LLAMA_ENTRYPOINT: llama-server
+    image: "{{ llama_head_image }}"
+    restart: unless-stopped
+    entrypoint: {{ llama_head_entrypoint }}
+    command: >-
+      --host 0.0.0.0
+      --jinja
+      --port {{ llama_head_container_port }}
+      --model {{ llama_model_path }}
+      --ctx-size {{ llama_ctx_size }}
+      --threads {{ llama_threads }}
+{% if llama_mlock | default(false) | bool %}
+      --load-mode mlock
+{% endif %}
+      --rpc {{ llama_worker_endpoints | join(',') }}
+    ports:
+      - "{{ llama_head_bind_address | default('127.0.0.1') }}:{{ llama_head_bind_port }}:{{ llama_head_container_port }}"
+    volumes:
+      - model-data:{{ llama_models_dir }}:ro
+{% if llama_mlock | default(false) | bool %}
+    cap_add:
+      - IPC_LOCK
+{% endif %}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  # Official Open WebUI documentation: https://docs.openwebui.com/
+  # Docker Compose networking guidance: https://docs.docker.com/compose/compose-file/
+  open-webui:
+    image: "{{ open_webui_image }}"
+    platform: linux/arm64
+    restart: unless-stopped
+    ports:
+      - "{{ open_webui_bind_address | default('127.0.0.1') }}:{{ open_webui_bind_port }}:{{ open_webui_container_port }}"
+    environment:
+      OPENAI_API_BASE_URL: "http://llama-server-head:{{ llama_head_container_port }}/v1"
+      OPENAI_API_KEY: "{{ open_webui_api_key | default('not-needed') }}"
+      WEBUI_AUTH: "{{ open_webui_auth | string | lower }}"
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      - llama-server-head
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  model-data:
+    driver: local
+  open-webui-data:
+    driver: local
+
+{% elif llama_cluster_role == 'worker' %}
+services:
+  llama-rpc-worker:
+    platform: linux/arm64
+    build:
+      context: "{{ llama_compose_project_dir }}/llama-cpp"
+      dockerfile: Dockerfile
+      args:
+        LLAMA_CPP_REF: "{{ llama_cpp_ref }}"
+        LLAMA_RUNTIME_PACKAGES: libgomp1
+        LLAMA_ENTRYPOINT: ggml-rpc-server
+    image: "{{ llama_worker_image }}"
+    restart: unless-stopped
+    entrypoint: {{ llama_worker_entrypoint }}
+    command: >-
+      --host 0.0.0.0
+      --port {{ llama_worker_container_port }}
+    ports:
+      - "{{ llama_worker_bind_address | default('0.0.0.0') }}:{{ llama_worker_port }}:{{ llama_worker_container_port }}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+{% endif %}
