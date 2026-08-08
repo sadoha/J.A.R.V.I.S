@@ -22,8 +22,13 @@ llama_head_bind_address: 0.0.0.0
 llama_head_bind_port: 8080
 llama_head_container_port: 8080
 llama_ctx_size: 65536
-# The RPi 5 has 4 cores, so a higher thread count is recommended for performance.
-llama_threads: 4
+# The RPi 5 has 4 cores, so use shared CPU tuning defaults for both head and worker services.
+llama_cpu_threads: 4
+llama_cpu_threads_batch: 4
+llama_head_batch_size: 128
+llama_head_micro_batch_size: 64
+llama_head_cont_batching: true
+llama_head_parallel_sequences: 4
 llama_cluster_role: head
 llama_mlock: false
 llama_head_entrypoint:

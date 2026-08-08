@@ -44,7 +44,14 @@ services:
       --port {{ llama_head_container_port }}
       --model {{ llama_model_path }}
       --ctx-size {{ llama_ctx_size }}
-      --threads {{ llama_threads }}
+      -t {{ llama_cpu_threads }}
+      -tb {{ llama_cpu_threads_batch }}
+      -b {{ llama_head_batch_size }}
+      -ub {{ llama_head_micro_batch_size }}
+{% if llama_head_cont_batching | bool %}
+      --cont-batching
+{% endif %}
+      --parallel {{ llama_head_parallel_sequences }}
 {% if llama_mlock | default(false) | bool %}
       --load-mode mlock
 {% endif %}
@@ -107,6 +114,7 @@ services:
     restart: unless-stopped
     entrypoint: {{ llama_worker_entrypoint }}
     command: >-
+      -t {{ llama_cpu_threads }}
       --host 0.0.0.0
       --port {{ llama_worker_container_port }}
     ports:

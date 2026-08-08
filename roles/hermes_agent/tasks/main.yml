@@ -29,9 +29,10 @@
   ansible.builtin.file:
     path: "{{ hermes_agent_home_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ hermes_agent_home_owner }}"
+    group: "{{ hermes_agent_home_group }}"
     mode: '0755'
+    recurse: true
   when: hermes_agent_enabled | bool
   tags: [hermes, agent, install]
 
@@ -57,8 +58,8 @@
   ansible.builtin.template:
     src: hermes-agent.env.j2
     dest: "{{ hermes_agent_home_dir }}/.env"
-    owner: root
-    group: root
+    owner: "{{ hermes_agent_home_owner }}"
+    group: "{{ hermes_agent_home_group }}"
     mode: '0600'
   when: hermes_agent_enabled | bool
   tags: [hermes, agent, config]

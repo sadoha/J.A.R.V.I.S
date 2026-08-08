@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+export HOME="{{ hermes_agent_home_dir }}"
+export HERMES_HOME="{{ hermes_agent_home_dir }}"
+
 if [ -x "{{ hermes_agent_install_dir }}/venv/bin/hermes" ]; then
   exec "{{ hermes_agent_install_dir }}/venv/bin/hermes" "$@"
 elif [ -x "{{ hermes_agent_install_dir }}/venv/bin/hermes-agent" ]; then
