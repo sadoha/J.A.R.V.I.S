@@ -1,6 +1,8 @@
 ---
-- name: Restart hermes-agent
+# Description:
+#   - Handles Hermes agent service reloads.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Reload systemd units for Hermes agent
   ansible.builtin.systemd:
-    name: hermes-agent
     daemon_reload: true
-    state: restarted

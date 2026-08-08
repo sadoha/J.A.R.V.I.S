@@ -1,14 +1,14 @@
 # Raspberry Pi 5 AI Cluster Automation with Ansible
 
 ## Description
-This repository provides Ansible-based automation for deploying a Raspberry Pi 5 AI cluster. It includes a `llama.cpp` RPC cluster with Docker and offers inventory-driven role modules for system tuning (Wi-Fi, performance, hardware).
+This repository provides Ansible-based automation for deploying a Raspberry Pi 5 AI cluster. It includes a `llama.cpp` RPC cluster with Docker and a dedicated Hermes Agent role for a Raspberry Pi 5 deployment.
 
 ## Prerequisites
 
 -   **Ansible**: Version 2.10 or higher.
 -   **Python 3**: With `pip` for Ansible dependencies.
 -   **SSH access**: To all Raspberry Pi nodes with the specified `ansible_user`.
--   **Git**: For cloning the repository.
+-   **Git**: Required for repository and role updates.
 -   **ansible-lint**: Recommended for linting Ansible playbooks.
 -   **yamllint**: Recommended for linting YAML files.
 -   **pre-commit**: Recommended for managing pre-commit hooks for code quality.
@@ -30,6 +30,7 @@ This repository follows the official Ansible sample setup pattern, using role-ba
 - motd: installs a J.A.R.V.I.S. banner and host configuration summary in /etc/motd.
 - docker_engine: official Docker apt repository setup and hardened daemon logging.
 - llama_cluster: deploys `llama-server-head` on the head node and `llama-rpc-worker` on each worker node.
+- hermes_agent: installs and runs the Hermes Agent service and points it at the configured llama head endpoint.
 - wifi: explicit Wi-Fi enable or disable through inventory variable.
 - performance: CPU governor, sysctl, and file descriptor tuning.
 - hardware_tuning: PCIe, PCIe Gen 3, PoE fan probe, and active-cooling fan thresholds.
@@ -44,25 +45,33 @@ This repository follows the official Ansible sample setup pattern, using role-ba
 
 ## Usage
 
-### 1. Install required Ansible collections
+### 1. Deploy the Hermes roles
+
+```bash
+ansible-playbook -i inventories/dev/inventory.yml hermes_node.yml
+```
+
+### 2. Deploy the full stack
+
+### 3. Install required Ansible collections
 
 ```bash
 ansible-galaxy collection install -r collections/requirements.yml
 ```
 
-### 2. Validate syntax
+### 4. Validate syntax
 
 ```bash
 ansible-playbook -i inventories/dev/inventory.yml site.yml --syntax-check
 ```
 
-### 3. Validate host reachability
+### 5. Validate host reachability
 
 ```bash
 ansible -i inventories/dev/inventory.yml all -m ping
 ```
 
-### 4. Configure Variables
+### 6. Configure variables
 
 Edit environment-specific variables in `inventories/dev/inventory.yml`.
 
@@ -72,7 +81,7 @@ Edit environment-specific variables in `inventories/dev/inventory.yml`.
     -   `llama_model_path`
 -   **Image Pinning**: If container images are pinned by digest, set `llama_enforce_image_digests: true`.
 
-### 5. Deploy the Cluster
+### 7. Deploy the cluster
 
 To deploy the full stack:
 
@@ -80,15 +89,24 @@ To deploy the full stack:
 ansible-playbook -i inventories/dev/inventory.yml site.yml
 ```
 
+To deploy only Hermes Agent:
+
+```bash
+ansible-playbook -i inventories/dev/inventory.yml hermes_node.yml --tags hermes,agent
+```
+
+The role configures Hermes with the llama head endpoint, model ID, context length,
+local API key, and hard-stop guardrail. Verify it on the Hermes host:
+
+```bash
+hermes config get model.base_url
+```
+
 To deploy only cluster nodes (excluding other roles like `common`, `ntp`, etc.):
 
 ```bash
 ansible-playbook -i inventories/dev/inventory.yml cluster_nodes.yml
 ```
-
-## Open WebUI on the head node
-
-Once the head node deployment is complete, Open WebUI is accessible by default at [http://127.0.0.1:3000/](http://127.0.0.1:3000/). This service utilizes the official Open WebUI container image and connects to the local `llama.cpp` head API via the Compose network.
 
 ## Testing llama-rpc-worker and llama-server-head with curl
 
@@ -174,8 +192,15 @@ ansible-playbook -i inventories/dev/inventory.yml site.yml --tags wifi
 ansible-playbook -i inventories/dev/inventory.yml site.yml --tags performance,hardware
 ```
 
+## Official Documentation References
+
+- Ansible module documentation: https://docs.ansible.com/
+- Hermes Agent repository: https://github.com/NousResearch/hermes-agent
+
 ## Notes
 
 - Any config.txt changes require a reboot to become active.
 - Raspberry Pi documentation warns that PCIe Gen 3 on Raspberry Pi 5 may be unstable. Keep this enabled only after validation under your thermal and power conditions.
 - For best USB and PCIe stability on Raspberry Pi 5, use a 5A USB-C power supply.
+
+Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>

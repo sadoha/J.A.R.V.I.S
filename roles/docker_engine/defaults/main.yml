@@ -1,0 +1,10 @@
+---
+# Description:
+#   - Defines Docker daemon logging defaults.
+#   - Controls daemon.json management.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+docker_manage_daemon_json: true
+docker_log_driver: json-file
+docker_log_max_size: "10m"
+docker_log_max_file: "3"

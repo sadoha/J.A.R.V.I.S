@@ -3,7 +3,7 @@
 # Description:
 #   - Defines the development environment inventory for Raspberry Pi 5 cluster.
 #   - Specifies host groups, IP addresses, and role-specific variable overrides.
-#   - Configures global variables for Ansible user, NTP, Docker, Hermes, performance, and hardware tuning.
+#   - Configures shared variables used across multiple roles.
 # Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
 
 all:
@@ -14,32 +14,18 @@ all:
       - 192.168.50.201
       - 192.168.50.202
       - 192.168.50.203
+      - 192.168.50.204
 
-    # Set to enabled or disabled depending on your deployment needs.
+    # Shared by llama_cluster and hermes_agent.
+    llama_head_bind_port: 8080
+    llama_model_path: /opt/llama-cluster/models/gemma-3-1b-it-Q4_K_M.gguf
+    llama_ctx_size: 65536
+
+    # Shared by preflight, motd, and wifi.
     wifi_state: enabled
 
-    # NTP controls. Keep all hosts on the same authoritative sources.
+    # Shared by motd and ntp.
     ntp_enabled: true
-    ntp_servers:
-      - time.cloudflare.com
-      - time.google.com
-      - pool.ntp.org
-
-    # Docker hardening and runtime controls.
-    docker_manage_daemon_json: true
-    docker_log_driver: json-file
-    docker_log_max_size: "10m"
-    docker_log_max_file: "3"
-
-    # Performance tuning controls.
-    performance_cpu_governor: performance
-    performance_vfs_cache_pressure: 50
-    performance_no_file_soft: 65535
-    performance_no_file_hard: 65535
-
-    # Hardware tuning controls for Raspberry Pi firmware settings.
-    hardware_enable_pcie: true
-    hardware_enable_pcie_gen3: true
 
   children:
     llama_cluster_nodes:
@@ -65,3 +51,10 @@ all:
               ansible_host: 192.168.50.202
             rpi5-dev-node-3:
               ansible_host: 192.168.50.203
+
+    hermes_nodes:
+      children:
+        hermes_agent_nodes:
+          hosts:
+            rpi5-hermes-agent:
+              ansible_host: 192.168.50.204

@@ -1,1 +1,29 @@
 ---
+# Description:
+#   - Deploys Hermes Agent to the configured Hermes host group.
+#   - Applies the shared preflight, OS, and runtime roles before service deployment.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Configure Hermes agent node
+  hosts: hermes_agent_nodes
+  gather_facts: true
+  become: true
+  roles:
+    - role: preflight
+      tags: [always, preflight, security]
+    - role: common
+      tags: [common, os, security]
+    - role: motd
+      tags: [motd, branding, info]
+    - role: ntp
+      tags: [ntp, time, security]
+    - role: docker_engine
+      tags: [docker, runtime, security]
+    - role: hermes_agent
+      tags: [hermes, agent, deploy]
+    - role: wifi
+      tags: [wifi, network]
+    - role: performance
+      tags: [performance, tuning]
+    - role: hardware_tuning
+      tags: [hardware, tuning]

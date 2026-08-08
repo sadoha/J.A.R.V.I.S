@@ -1,4 +1,8 @@
 ---
+# Description:
+#   - Installs baseline OS packages and prepares the host for automation.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 - name: Install baseline OS packages
   ansible.builtin.apt:
     name:
@@ -50,6 +54,7 @@
 - name: Generate en_US.UTF-8 locale
   ansible.builtin.command:
     cmd: locale-gen en_US.UTF-8
+    creates: /usr/lib/locale/en_US.UTF-8/LC_CTYPE
   when: locale_gen_entry.changed
   tags: [common, os]
 

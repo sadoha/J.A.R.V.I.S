@@ -1,4 +1,9 @@
 ---
+# Description:
+#   - Configures the llama.cpp RPC worker and head nodes.
+#   - Preserves the existing role-based deployment layout.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 - name: Configure llama.cpp RPC worker nodes
   hosts: llama_rpc_workers
   gather_facts: true

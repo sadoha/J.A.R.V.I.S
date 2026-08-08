@@ -1,13 +1,20 @@
 ---
-hermes_release_url: ""
-hermes_release_checksum: ""
-hermes_release_version: "v0.0.0"
-hermes_release_archive_dir: /var/tmp/hermes-agent
+# Description:
+#   - Defines default values for the Hermes agent role.
+#   - Keeps installation, service, and endpoint settings centralized.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
 
-hermes_service_user: hermes
-hermes_service_group: hermes
-hermes_install_dir: /opt/hermes-agent
-hermes_data_dir: /var/lib/hermes-agent
-hermes_log_dir: /var/log/hermes-agent
-hermes_head_base_url: http://127.0.0.1:8080/v1
-hermes_exec_start: /opt/hermes-agent/current/hermes-agent gateway run
+hermes_agent_enabled: true
+hermes_agent_repo_url: "https://github.com/NousResearch/hermes-agent.git"
+hermes_agent_version: "main"
+hermes_agent_install_dir: "/opt/hermes-agent"
+hermes_agent_service_name: "hermes-agent"
+hermes_agent_bind_host: "127.0.0.1"
+hermes_agent_bind_port: "8000"
+hermes_agent_api_url: >-
+  http://{{ hostvars[groups['llama_server_head'][0]].ansible_host }}:{{ llama_head_bind_port }}/v1
+hermes_agent_model_id: "{{ llama_model_path | basename | regex_replace('\\.gguf$', '') }}"
+hermes_agent_context_length: "{{ llama_ctx_size }}"
+hermes_agent_model_api_key: none
+hermes_agent_model_provider: custom
+hermes_agent_hard_stop_enabled: true

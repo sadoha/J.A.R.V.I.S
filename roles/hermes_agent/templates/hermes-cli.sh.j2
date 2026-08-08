@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Description:
+#   - Provides a host-level Hermes CLI wrapper for the installed Python module.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+set -euo pipefail
+
+if [ -x "{{ hermes_agent_install_dir }}/venv/bin/hermes" ]; then
+  exec "{{ hermes_agent_install_dir }}/venv/bin/hermes" "$@"
+elif [ -x "{{ hermes_agent_install_dir }}/venv/bin/hermes-agent" ]; then
+  exec "{{ hermes_agent_install_dir }}/venv/bin/hermes-agent" "$@"
+elif "{{ hermes_agent_install_dir }}/venv/bin/python" -c "import hermes_agent" >/dev/null 2>&1; then
+  exec "{{ hermes_agent_install_dir }}/venv/bin/python" -m hermes_agent "$@"
+elif "{{ hermes_agent_install_dir }}/venv/bin/python" -c "import hermes" >/dev/null 2>&1; then
+  exec "{{ hermes_agent_install_dir }}/venv/bin/python" -m hermes "$@"
+else
+  echo "Unable to locate a Hermes runtime entrypoint in {{ hermes_agent_install_dir }}/venv" >&2
+  exit 1
+fi

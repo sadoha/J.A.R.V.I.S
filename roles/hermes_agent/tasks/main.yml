@@ -1,1 +1,112 @@
 ---
+# Description:
+#   - Installs and configures the Hermes agent service on the target host.
+#   - Uses the official repository layout as the source of truth.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Install Hermes agent prerequisites # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+    state: present
+    update_cache: true
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, install]
+
+- name: Ensure Hermes agent directory exists # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+  ansible.builtin.file:
+    path: "{{ hermes_agent_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, install]
+
+- name: Clone Hermes agent repository # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/git_module.html
+  ansible.builtin.git:
+    repo: "{{ hermes_agent_repo_url }}"
+    dest: "{{ hermes_agent_install_dir }}/src"
+    version: "{{ hermes_agent_version if hermes_agent_version not in ['latest', 'default', 'main'] else omit }}"
+    update: true
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, install]
+
+- name: Install Hermes agent from source into the virtual environment # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/pip_module.html
+  ansible.builtin.pip:
+    name: "{{ hermes_agent_install_dir }}/src"
+    virtualenv: "{{ hermes_agent_install_dir }}/venv"
+    virtualenv_command: python3 -m venv
+    editable: true
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, install]
+
+- name: Render Hermes agent environment file # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+  ansible.builtin.template:
+    src: hermes-agent.env.j2
+    dest: "{{ hermes_agent_install_dir }}/config.env"
+    owner: root
+    group: root
+    mode: '0600'
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, config]
+
+- name: Render Hermes agent CLI wrapper # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+  ansible.builtin.template:
+    src: hermes-cli.sh.j2
+    dest: /usr/local/bin/hermes
+    owner: root
+    group: root
+    mode: '0755'
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, config]
+
+- name: Configure Hermes agent model provider # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/hermes
+      - config
+      - set
+      - "{{ item.key }}"
+      - "{{ item.value | string | lower if item.value is boolean else item.value | string }}"
+  loop:
+    - key: model.provider
+      value: "{{ hermes_agent_model_provider }}"
+    - key: model.base_url
+      value: "{{ hermes_agent_api_url }}"
+    - key: model.default
+      value: "{{ hermes_agent_model_id }}"
+    - key: model.context_length
+      value: "{{ hermes_agent_context_length }}"
+    - key: model.api_key
+      value: "{{ hermes_agent_model_api_key }}"
+    - key: tool_loop_guardrails.hard_stop_enabled
+      value: "{{ hermes_agent_hard_stop_enabled }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: false
+  no_log: "{{ item.key == 'model.api_key' }}"
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, config]
+
+- name: Render Hermes agent systemd unit # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+  ansible.builtin.template:
+    src: hermes-agent.service.j2
+    dest: "/etc/systemd/system/{{ hermes_agent_service_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd units for Hermes agent
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, config]
+
+- name: Ensure Hermes agent service is enabled and running # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_module.html
+  ansible.builtin.systemd:
+    name: "{{ hermes_agent_service_name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, service]

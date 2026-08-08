@@ -1,2 +1,8 @@
 ---
+# Description:
+#   - Entry point for the Ansible deployment workflow.
+#   - Includes the llama cluster playbook and the Hermes playbook.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 - import_playbook: cluster_nodes.yml
+- import_playbook: hermes_node.yml

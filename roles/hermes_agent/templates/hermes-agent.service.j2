@@ -1,3 +1,7 @@
+# Description:
+#   - Systemd unit for the Hermes agent service.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 [Unit]
 Description=Hermes Agent
 After=network-online.target
@@ -5,21 +9,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User={{ hermes_service_user }}
-Group={{ hermes_service_group }}
-EnvironmentFile=/etc/default/hermes-agent
-WorkingDirectory={{ hermes_install_dir }}/current
-ExecStart={{ hermes_exec_start }}
+WorkingDirectory={{ hermes_agent_install_dir }}/src
+EnvironmentFile={{ hermes_agent_install_dir }}/config.env
+ExecStart=/usr/local/bin/hermes --api-url ${HERMES_AGENT_API_URL} --host ${HERMES_AGENT_HOST} --port ${HERMES_AGENT_PORT}
 Restart=on-failure
-RestartSec=5
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ProtectControlGroups=true
-ProtectKernelModules=true
-ProtectKernelTunables=true
-ReadWritePaths={{ hermes_data_dir }} {{ hermes_log_dir }}
+RestartSec=5s
+User=root
 
 [Install]
 WantedBy=multi-user.target

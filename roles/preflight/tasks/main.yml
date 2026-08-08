@@ -34,8 +34,9 @@
   vars:
     all_ips: >-
       {{
-        groups['llama_cluster_nodes']
+        groups['all']
         | map('extract', hostvars, 'ansible_host')
+        | select('defined')
         | list
       }}
   run_once: true
