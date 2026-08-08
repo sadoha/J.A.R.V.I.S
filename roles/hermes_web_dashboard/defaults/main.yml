@@ -1,0 +1,16 @@
+---
+# Description:
+#   - Defines default values for the Hermes web dashboard role.
+#   - Deploys the dashboard through Docker Compose against the shared Hermes home.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+hermes_web_dashboard_enabled: true
+hermes_web_dashboard_container_name: "hermes-web-dashboard"
+hermes_web_dashboard_compose_project_dir: "/opt/hermes-web-dashboard"
+hermes_web_dashboard_compose_file: "{{ hermes_web_dashboard_compose_project_dir }}/docker-compose.yml"
+hermes_web_dashboard_image: "nousresearch/hermes-agent:latest"
+hermes_web_dashboard_bind_host: "0.0.0.0"
+hermes_web_dashboard_bind_port: "9119"
+hermes_web_dashboard_basic_auth_username: "admin"
+hermes_web_dashboard_basic_auth_password: "ChangeMe-Now"
+hermes_web_dashboard_basic_auth_secret: "ChangeMe-Now-Too"

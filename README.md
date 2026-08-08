@@ -76,6 +76,47 @@ ansible-playbook -i inventories/dev/inventory.yml cluster_nodes.yml
 - Set `llama_enforce_image_digests: true` if you want digest pinning.
 - Store Hermes Telegram secrets in `inventories/dev/group_vars/hermes_agent_nodes/vault.yml` and encrypt that file with `ansible-vault`.
 
+## Web UI
+
+This section covers the Hermes web dashboard and the Open WebUI integration points.
+
+### Hermes Web Dashboard
+
+- `hermes_web_dashboard`: deploys the Hermes Web Dashboard through Docker Compose.
+- Docker Engine and the Compose v2 plugin are required for the dashboard container.
+- The dashboard runs as a Docker Compose service, binds to `0.0.0.0:9119` by default, and shares the Hermes home volume with the Hermes Agent.
+
+### Copy Dashboard Links
+
+```text
+http://<host-ip>:9119/
+http://<host-ip>:9119/login
+http://<host-ip>:9119/api/status
+```
+
+### Deployment
+
+```bash
+ansible-playbook -i inventories/dev/inventory.yml hermes_node.yml
+```
+
+### Open WebUI
+
+Open WebUI connects to the Hermes gateway API, not directly to the dashboard.
+
+```text
+http://<host-ip>:8642/v1
+```
+
+- Open WebUI setup: https://docs.openwebui.com/
+- Hermes gateway endpoint: use the Hermes host IP and port `8642`
+- If you run Open WebUI separately, point its `OPENAI_API_BASE_URL` at the Hermes gateway endpoint above.
+
+## Important
+
+- Hermes Agent was intentionally installed locally on the host rather than in a Docker container.
+- The Hermes Agent service runs with root privileges on the target machine.
+
 ## Official Documentation References
 - Ansible playbooks: https://docs.ansible.com/ansible/latest/playbook_guide/playbooks.html
 - Ansible inventory: https://docs.ansible.com/ansible/latest/inventory_guide/index.html
@@ -88,6 +129,8 @@ ansible-playbook -i inventories/dev/inventory.yml cluster_nodes.yml
 - `ansible.builtin.service`: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
 - `ansible.builtin.set_fact`: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html
 - `ansible.builtin.template`: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+- `ansible.builtin.pip`: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/pip_module.html
+- `ansible.builtin.systemd`: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_module.html
 - `community.docker.docker_compose_v2`: https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html
 - `community.docker.docker_image`: https://docs.ansible.com/ansible/latest/collections/community/docker/docker_image_module.html
 

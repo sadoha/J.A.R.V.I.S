@@ -8,6 +8,7 @@ hermes_agent_enabled: true
 hermes_agent_repo_url: "https://github.com/NousResearch/hermes-agent.git"
 hermes_agent_version: "main"
 hermes_agent_install_dir: "/opt/hermes-agent"
+hermes_agent_home_dir: "/opt/hermes-agent/.hermes"
 hermes_agent_service_name: "hermes-agent"
 hermes_agent_bind_host: "127.0.0.1"
 hermes_agent_bind_port: "8000"

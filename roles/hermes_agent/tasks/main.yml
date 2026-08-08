@@ -25,6 +25,16 @@
   when: hermes_agent_enabled | bool
   tags: [hermes, agent, install]
 
+- name: Ensure Hermes home directory exists # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+  ansible.builtin.file:
+    path: "{{ hermes_agent_home_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: hermes_agent_enabled | bool
+  tags: [hermes, agent, install]
+
 - name: Clone Hermes agent repository # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/git_module.html
   ansible.builtin.git:
     repo: "{{ hermes_agent_repo_url }}"
@@ -46,7 +56,7 @@
 - name: Render Hermes agent environment file # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
   ansible.builtin.template:
     src: hermes-agent.env.j2
-    dest: "{{ hermes_agent_install_dir }}/config.env"
+    dest: "{{ hermes_agent_home_dir }}/.env"
     owner: root
     group: root
     mode: '0600'
@@ -92,6 +102,9 @@
     label: "{{ item.key }}"
   changed_when: false
   no_log: "{{ item.key in ['model.api_key', 'telegram.bot_token', 'telegram.allowed_users'] }}"
+  environment:
+    HOME: "{{ hermes_agent_home_dir }}"
+    HERMES_HOME: "{{ hermes_agent_home_dir }}"
   when: hermes_agent_enabled | bool
   tags: [hermes, agent, config]
 

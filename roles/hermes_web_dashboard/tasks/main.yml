@@ -1,0 +1,58 @@
+---
+# Description:
+#   - Deploys the Hermes web dashboard through Docker Compose.
+#   - Keeps the dashboard isolated from the host Python/npm toolchain.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
+- name: Ensure Hermes web dashboard compose project directory exists # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+  ansible.builtin.file:
+    path: "{{ hermes_web_dashboard_compose_project_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: hermes_web_dashboard_enabled | bool
+  tags: [hermes, dashboard, install]
+
+- name: Render Hermes web dashboard Docker Compose file # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ hermes_web_dashboard_compose_file }}"
+    owner: root
+    group: root
+    mode: '0640'
+  when: hermes_web_dashboard_enabled | bool
+  tags: [hermes, dashboard, config]
+
+- name: Start or update Hermes web dashboard container # https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html
+  community.docker.docker_compose_v2:
+    project_src: "{{ hermes_web_dashboard_compose_project_dir }}"
+    files:
+      - "{{ hermes_web_dashboard_compose_file | basename }}"
+    services:
+      - "{{ hermes_web_dashboard_container_name }}"
+    pull: always
+    remove_orphans: true
+  when: hermes_web_dashboard_enabled | bool
+  tags: [hermes, dashboard, service]
+
+- name: Wait for Hermes web dashboard port to open # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/wait_for_module.html
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ hermes_web_dashboard_bind_port }}"
+    state: started
+    timeout: 60
+  when: hermes_web_dashboard_enabled | bool
+  tags: [hermes, dashboard, verify]
+
+- name: Verify Hermes web dashboard health endpoint # https://docs.ansible.com/ansible/latest/collections/ansible/builtin.uri_module.html
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ hermes_web_dashboard_bind_port }}/health"
+    method: GET
+    status_code: 200
+  register: hermes_web_dashboard_health
+  retries: 10
+  delay: 3
+  until: hermes_web_dashboard_health.status == 200
+  when: hermes_web_dashboard_enabled | bool
+  tags: [hermes, dashboard, verify]

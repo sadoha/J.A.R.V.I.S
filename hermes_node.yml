@@ -21,6 +21,8 @@
       tags: [docker, runtime, security]
     - role: hermes_agent
       tags: [hermes, agent, deploy]
+    - role: hermes_web_dashboard
+      tags: [hermes, dashboard, deploy]
     - role: wifi
       tags: [wifi, network]
     - role: performance

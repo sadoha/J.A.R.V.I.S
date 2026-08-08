@@ -10,7 +10,9 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory={{ hermes_agent_install_dir }}/src
-EnvironmentFile={{ hermes_agent_install_dir }}/config.env
+EnvironmentFile={{ hermes_agent_home_dir }}/.env
+Environment=HOME={{ hermes_agent_home_dir }}
+Environment=HERMES_HOME={{ hermes_agent_home_dir }}
 ExecStart=/usr/local/bin/hermes --api-url ${HERMES_AGENT_API_URL} --host ${HERMES_AGENT_HOST} --port ${HERMES_AGENT_PORT}
 Restart=on-failure
 RestartSec=5s
