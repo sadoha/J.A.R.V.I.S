@@ -1,3 +1,7 @@
 ---
+# Description:
+#   - Declares required Ansible collections.
+#   - Installs the Docker collection used by the cluster roles.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
 collections:
   - name: community.docker

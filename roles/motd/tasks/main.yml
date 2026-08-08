@@ -1,5 +1,11 @@
 ---
+# Description:
+#   - Builds the MOTD profile text.
+#   - Installs the J.A.R.V.I.S. MOTD banner.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 - name: Build node profile text for MOTD
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html
   ansible.builtin.set_fact:
     motd_node_profile: >-
       {{
@@ -10,6 +16,7 @@
   tags: [motd, branding, info]
 
 - name: Install J.A.R.V.I.S. MOTD
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
   ansible.builtin.template:
     src: motd.j2
     dest: /etc/motd

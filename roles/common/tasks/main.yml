@@ -1,9 +1,11 @@
 ---
 # Description:
-#   - Installs baseline OS packages and prepares the host for automation.
+#   - Installs baseline OS packages.
+#   - Configures locale defaults.
 # Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
 
 - name: Install baseline OS packages
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
   ansible.builtin.apt:
     name:
       - apt-transport-https
@@ -29,6 +31,7 @@
   tags: [common, os, security]
 
 - name: Enable unattended security upgrades
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
   ansible.builtin.service:
     name: unattended-upgrades
     state: started
@@ -36,6 +39,7 @@
   tags: [common, os, security]
 
 - name: Ensure locale packages are installed
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
   ansible.builtin.apt:
     name:
       - locales
@@ -44,6 +48,7 @@
   tags: [common, os]
 
 - name: Ensure en_US.UTF-8 locale is enabled
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html
   ansible.builtin.lineinfile:
     path: /etc/locale.gen
     regexp: '^#?\s*en_US\.UTF-8\s+UTF-8$'
@@ -52,6 +57,7 @@
   tags: [common, os]
 
 - name: Generate en_US.UTF-8 locale
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
   ansible.builtin.command:
     cmd: locale-gen en_US.UTF-8
     creates: /usr/lib/locale/en_US.UTF-8/LC_CTYPE
@@ -59,6 +65,7 @@
   tags: [common, os]
 
 - name: Configure system default locale
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
   ansible.builtin.copy:
     dest: /etc/default/locale
     owner: root

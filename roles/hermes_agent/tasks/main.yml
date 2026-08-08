@@ -82,12 +82,16 @@
       value: "{{ hermes_agent_context_length }}"
     - key: model.api_key
       value: "{{ hermes_agent_model_api_key }}"
+    - key: telegram.bot_token
+      value: "{{ hermes_agent_telegram_bot_token }}"
+    - key: telegram.allowed_users
+      value: "{{ hermes_agent_telegram_allowed_users }}"
     - key: tool_loop_guardrails.hard_stop_enabled
       value: "{{ hermes_agent_hard_stop_enabled }}"
   loop_control:
     label: "{{ item.key }}"
   changed_when: false
-  no_log: "{{ item.key == 'model.api_key' }}"
+  no_log: "{{ item.key in ['model.api_key', 'telegram.bot_token', 'telegram.allowed_users'] }}"
   when: hermes_agent_enabled | bool
   tags: [hermes, agent, config]
 

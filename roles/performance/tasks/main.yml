@@ -1,5 +1,11 @@
 ---
+# Description:
+#   - Applies CPU and kernel tuning.
+#   - Raises per-user file descriptor limits.
+# Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
+
 - name: Install performance tuning packages
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html
   ansible.builtin.apt:
     name:
       - linux-cpupower
@@ -8,6 +14,7 @@
   tags: [performance, tuning]
 
 - name: Configure CPU governor
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
   ansible.builtin.copy:
     dest: /etc/default/cpupower
     owner: root
@@ -19,6 +26,7 @@
   tags: [performance, tuning]
 
 - name: Ensure cpupower service is enabled
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_module.html
   ansible.builtin.service:
     name: cpupower
     state: started
@@ -26,6 +34,7 @@
   tags: [performance, tuning]
 
 - name: Apply kernel tuning sysctl profile
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
   ansible.builtin.copy:
     dest: /etc/sysctl.d/99-raspi-performance.conf
     owner: root
@@ -39,6 +48,7 @@
   tags: [performance, tuning]
 
 - name: Raise open file limits for all users
+  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
   ansible.builtin.copy:
     dest: /etc/security/limits.d/99-raspi-performance.conf
     owner: root

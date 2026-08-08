@@ -18,3 +18,5 @@ hermes_agent_context_length: "{{ llama_ctx_size }}"
 hermes_agent_model_api_key: none
 hermes_agent_model_provider: custom
 hermes_agent_hard_stop_enabled: true
+hermes_agent_telegram_bot_token: "{{ vault_hermes_agent_telegram_bot_token }}"
+hermes_agent_telegram_allowed_users: "{{ vault_hermes_agent_telegram_allowed_users }}"
