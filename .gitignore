@@ -5,31 +5,39 @@
 #   - Ensures sensitive files are not committed to version control.
 # Author: Andrii Sadovskyi <andrii.sadovskyi@gmail.com>
 
-# Ansible temporary files
+# Ansible artifacts
 .ansible/
-*.retry
-*.log
-*.tmp
-.vault_pass
 .ansible_tmp/
+.ansible_facts_cache/
 fact_caching/
+.fact_cache/
+*.retry
 
-# Python virtual environment
-.venv/
-venv/
-
-# Editor/IDE specific files
-.idea/
-.vscode/
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Sensitive files (ensure these are never committed)
+# Secrets and local overrides
+.vault_pass
+.vault_password_file
 *.vault
+*.vault_pass
 *.key
 *.pem
 *.crt
 *.env
+*.env.*
 inventories/**/group_vars/**/vault.yml
+
+# Python artifacts
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and scratch files
+*.log
+*.tmp
+
