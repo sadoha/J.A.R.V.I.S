@@ -114,6 +114,10 @@
     build:
       path: "{{ llama_compose_project_dir }}/llama-cpp"
       pull: false
+      args:
+        LLAMA_CPP_REF: "{{ llama_cpp_ref }}"
+        LLAMA_RUNTIME_PACKAGES: libgomp1
+        LLAMA_ENTRYPOINT: ggml-rpc-server
     state: present
   when: llama_cluster_role == 'worker'
   tags: [llama, cluster, deploy]
@@ -145,6 +149,10 @@
     build:
       path: "{{ llama_compose_project_dir }}/llama-cpp"
       pull: false
+      args:
+        LLAMA_CPP_REF: "{{ llama_cpp_ref }}"
+        LLAMA_RUNTIME_PACKAGES: libgomp1 curl
+        LLAMA_ENTRYPOINT: llama-server
     state: present
   when: llama_cluster_role == 'head'
   tags: [llama, cluster, deploy]

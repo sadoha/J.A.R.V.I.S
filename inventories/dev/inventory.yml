@@ -37,16 +37,19 @@ all:
             llama_cluster_role: head
             open_webui_enabled: true
             llama_worker_endpoints:
+              - 192.168.50.201:50052    
               - 192.168.50.202:50052
               - 192.168.50.203:50052
           hosts:
-            rpi5-dev-node-1:
-              ansible_host: 192.168.50.201
+            rpi5-dev-head-node:
+              ansible_host: 192.168.50.205
 
         llama_rpc_workers:
           vars:
             llama_cluster_role: worker
           hosts:
+            rpi5-dev-node-1:
+              ansible_host: 192.168.50.201
             rpi5-dev-node-2:
               ansible_host: 192.168.50.202
             rpi5-dev-node-3:

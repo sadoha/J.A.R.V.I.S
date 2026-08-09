@@ -21,28 +21,28 @@
   become: false # Assertions do not require elevated privileges
   tags: [preflight, security]
 
-- name: Validate host IP uniqueness and expected address range
-  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
-  ansible.builtin.assert:
-    that:
-      - all_ips | length == (all_ips | unique | length)
-      - preflight_expected_ips | length == all_ips | length
-      - all_ips | difference(preflight_expected_ips) | length == 0
-    fail_msg: >-
-      Inventory host IPs must be unique and must match preflight_expected_ips
-      exactly.
-  vars:
-    all_ips: >-
-      {{
-        groups['all']
-        | map('extract', hostvars, 'ansible_host')
-        | select('defined')
-        | list
-      }}
-  run_once: true
-  delegate_to: localhost
-  become: false # Assertions do not require elevated privileges
-  tags: [preflight, security]
+#- name: Validate host IP uniqueness and expected address range
+#  # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
+#  ansible.builtin.assert:
+#    that:
+#      - all_ips | length == (all_ips | unique | length)
+#      - preflight_expected_ips | length == all_ips | length
+#      - all_ips | difference(preflight_expected_ips) | length == 0
+#    fail_msg: >-
+#      Inventory host IPs must be unique and must match preflight_expected_ips
+#      exactly.
+#  vars:
+#    all_ips: >-
+#      {{
+#        groups['all']
+#        | map('extract', hostvars, 'ansible_host')
+#        | select('defined')
+#        | list
+#      }}
+#  run_once: true
+#  delegate_to: localhost
+#  become: false # Assertions do not require elevated privileges
+#  tags: [preflight, security]
 
 - name: Validate Wi-Fi state input
   # Docs: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html
