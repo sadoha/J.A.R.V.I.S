@@ -56,6 +56,7 @@ ansible-playbook -i inventories/dev/inventory.yml hermes_node.yml
 ## Notes
 - Shared defaults live in `roles/llama_cluster/defaults/main.yml`.
 - Keep secrets in `inventories/dev/group_vars/hermes_agent_nodes/vault.yml` and encrypt that file with `ansible-vault`.
+- Hermes web dashboard basic auth values are sourced from `inventories/dev/group_vars/hermes_agent_nodes/vault.yml`.
 - The Hermes Agent runs locally on the host with root privileges.
 - Hermes dashboard: `http://<host-ip>:9119/`.
 - Open WebUI is available at `http://<host-ip>:3000/`.
