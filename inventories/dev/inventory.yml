@@ -14,6 +14,7 @@ all:
       - 192.168.50.201
       - 192.168.50.202
       - 192.168.50.203
+      - 192.168.50.204
       - 192.168.50.205
 
     # Shared by llama_cluster and hermes_agent.
@@ -29,8 +30,8 @@ all:
 
   children:
     llama_cluster_nodes:
-      vars:
-        wifi_state: disabled
+      # vars:
+      #   wifi_state: disabled
       children:
         llama_server_head:
           vars:
@@ -42,7 +43,7 @@ all:
               - 192.168.50.203:50052
           hosts:
             rpi5-dev-head-node:
-              ansible_host: 192.168.50.205
+              ansible_host: 192.168.50.204
 
         llama_rpc_workers:
           vars:
